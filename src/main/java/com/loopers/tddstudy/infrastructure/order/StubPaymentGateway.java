@@ -1,10 +1,13 @@
 package com.loopers.tddstudy.infrastructure.order;
 
 import com.loopers.tddstudy.domain.order.PaymentGateway;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 
-
+@Profile("test")
+@Primary
+@Component
 public class StubPaymentGateway implements PaymentGateway {
 
     @Override

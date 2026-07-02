@@ -71,9 +71,14 @@ public class FakeProductRepository implements ProductRepository {
 
     @Override
     public List<Product> findAllByFilter(Long brandId, String sort) {
+        Comparator<Product> comparator = switch (sort == null ? "latest" : sort) {
+            case "price_asc" -> Comparator.comparingInt(Product::getPrice);
+            case "likes_desc" -> Comparator.comparingLong(Product::getLikeCount).reversed();
+            default -> Comparator.comparingLong(Product::getId).reversed(); // latest
+        };
         return store.values().stream()
                 .filter(p -> brandId == null || brandId.equals(p.getBrandId()))
-                .sorted(Comparator.comparingLong(Product::getLikeCount).reversed())
+                .sorted(comparator)
                 .collect(Collectors.toList());
     }
 

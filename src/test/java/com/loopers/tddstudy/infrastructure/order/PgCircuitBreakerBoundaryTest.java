@@ -139,12 +139,12 @@ class CircuitBreakerBoundaryTest {
             cb.transitionToOpenState();
             cb.transitionToHalfOpenState();
 
-            recordFailure(cb);
-            recordFailure(cb);
-            recordFailure(cb);
-            recordFailure(cb);
             recordSuccess(cb);
             recordSuccess(cb);
+            recordFailure(cb);
+            recordFailure(cb);
+            recordFailure(cb);
+            recordFailure(cb);
 
             assertThat(cb.getState()).isEqualTo(CircuitBreaker.State.CLOSED);
         }

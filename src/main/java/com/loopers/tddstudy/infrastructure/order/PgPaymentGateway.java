@@ -10,6 +10,7 @@ import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 
 @Primary
 @Component
+@org.springframework.context.annotation.Profile("!test")
 public class PgPaymentGateway implements PaymentGateway {
     private static final Logger log = LoggerFactory.getLogger(PgPaymentGateway.class);
 
