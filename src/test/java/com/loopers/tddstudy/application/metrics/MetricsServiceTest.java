@@ -14,18 +14,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
+import org.springframework.context.ApplicationEventPublisher;
+import java.util.ArrayList;
+import java.util.List;
+import com.loopers.tddstudy.application.ranking.RankingScoreEvent;
 
 class MetricsServiceTest {
 
     private ProductMetricsJpaRepository metricsRepository;
     private EventHandledJpaRepository eventHandledRepository;
     private MetricsService metricsService;
+    private List<Object> publishedEvents;
 
     @BeforeEach
     void setUp() {
         metricsRepository = mock(ProductMetricsJpaRepository.class);
         eventHandledRepository = mock(EventHandledJpaRepository.class);
-        metricsService = new MetricsService(metricsRepository, eventHandledRepository);
+        publishedEvents = new ArrayList<>();
+        ApplicationEventPublisher eventPublisher = publishedEvents::add;   // 추가
+        metricsService = new MetricsService(metricsRepository, eventHandledRepository, eventPublisher);
     }
 
     @Test
@@ -79,4 +86,26 @@ class MetricsServiceTest {
         verify(metricsRepository, never()).save(any());   // 집계 저장 안 함
         verify(eventHandledRepository).save(any());       // 재처리 방지 기록은 함
     }
+    @Test
+    @DisplayName("정상 처리된 이벤트는 랭킹 점수 이벤트를 발행한다")
+    void publishes_ranking_event_on_success() {
+        when(eventHandledRepository.existsById("e1")).thenReturn(false);
+        when(metricsRepository.findById(1L)).thenReturn(Optional.empty());
+
+        metricsService.apply(new CatalogEvent("e1", "PRODUCT_LIKED", 1L, 1, 5000L));
+
+        assertThat(publishedEvents).containsExactly(
+                new RankingScoreEvent(1L, "PRODUCT_LIKED", 5000L));
+    }
+
+    @Test
+    @DisplayName("멱등 skip 된 이벤트는 랭킹 점수 이벤트를 발행하지 않는다")
+    void does_not_publish_when_skipped() {
+        when(eventHandledRepository.existsById("e1")).thenReturn(true);   // 이미 처리됨
+
+        metricsService.apply(new CatalogEvent("e1", "PRODUCT_LIKED", 1L, 1, 5000L));
+
+        assertThat(publishedEvents).isEmpty();   // 점수도 두 번 붙으면 안 되니까
+    }
+
 }

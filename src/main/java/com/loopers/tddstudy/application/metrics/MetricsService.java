@@ -4,17 +4,22 @@ import com.loopers.tddstudy.infrastructure.metrics.*;
 import com.loopers.tddstudy.messaging.CatalogEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.loopers.tddstudy.application.ranking.RankingScoreEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 public class MetricsService {
 
     private final ProductMetricsJpaRepository metricsRepository;
     private final EventHandledJpaRepository eventHandledRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MetricsService(ProductMetricsJpaRepository metricsRepository,
-                          EventHandledJpaRepository eventHandledRepository) {
+                          EventHandledJpaRepository eventHandledRepository,
+                          ApplicationEventPublisher eventPublisher) {
         this.metricsRepository = metricsRepository;
         this.eventHandledRepository = eventHandledRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -42,5 +47,8 @@ public class MetricsService {
         metrics.markEvent(event.occurredAt());          // ← 반영한 이벤트 시각 기록
         metricsRepository.save(metrics);
         eventHandledRepository.save(new EventHandled(event.eventId()));
+
+        eventPublisher.publishEvent(new RankingScoreEvent(              // 추가
+                event.productId(), event.eventType(), event.occurredAt()));
     }
 }
